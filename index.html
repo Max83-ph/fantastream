@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FantaStream</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>[hidden]{display:none!important} body{margin:0}</style>
+<style>
+/* Layout: quaderno a quadretti come lo schizzo — 2 manager in alto, 9 colonne stream, rosa dei nomi a lato */
+:root{
+  --paper:#f6f7fb; --grid:rgba(52,78,170,.09); --card:#ffffff; --ink:#1d275a; --ink-soft:#56608c;
+  --line:#8f9bc9; --m1:#2d4fd0; --m2:#d1452c; --m1-bg:#e8edff; --m2-bg:#fdeae5;
+  --ok:#1d8048; --ok-bg:#e3f4ea; --near:#a87207; --near-bg:#fbf0d6; --miss:#b23a28; --miss-bg:#fbe6e2;
+  --hl:#fff3b0; --shadow:0 1px 0 rgba(29,39,90,.06),0 2px 8px rgba(29,39,90,.06);
+  --f-hand:"Kalam","Comic Sans MS",cursive; --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#11152a; --grid:rgba(140,160,255,.07); --card:#1a2040; --ink:#e3e7ff; --ink-soft:#9aa3cf;
+  --line:#4d5788; --m1:#7d97ff; --m2:#ff8a6e; --m1-bg:#232d5e; --m2-bg:#3d2422;
+  --ok:#5cd18f; --ok-bg:#16352a; --near:#e6b24a; --near-bg:#372d14; --miss:#ff8a78; --miss-bg:#3d1f1c;
+  --hl:#3b3615; --shadow:0 1px 0 rgba(0,0,0,.3),0 2px 10px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#11152a; --grid:rgba(140,160,255,.07); --card:#1a2040; --ink:#e3e7ff; --ink-soft:#9aa3cf;
+  --line:#4d5788; --m1:#7d97ff; --m2:#ff8a6e; --m1-bg:#232d5e; --m2-bg:#3d2422;
+  --ok:#5cd18f; --ok-bg:#16352a; --near:#e6b24a; --near-bg:#372d14; --miss:#ff8a78; --miss-bg:#3d1f1c;
+  --hl:#3b3615; --shadow:0 1px 0 rgba(0,0,0,.3),0 2px 10px rgba(0,0,0,.25); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:22px 22px;}
+.wrap{max-width:1500px;margin:0 auto;padding-inline:16px;padding-block:18px 60px;display:flex;flex-direction:column;gap:16px}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--m1);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.brand h1{font-family:var(--f-hand);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1;margin:0;letter-spacing:.5px}
+.brand h1 span{color:var(--m2)}
+.brand p{margin:4px 0 0;color:var(--ink-soft)}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:99px;border:1.5px solid currentColor}
+.status.open{color:var(--ok)} .status.locked{color:var(--near)} .status.rev{color:var(--m2)}
+nav.tabs{display:flex;gap:4px;border-bottom:1.5px solid var(--line);overflow-x:auto}
+nav.tabs button{background:none;border:0;padding:10px 14px 9px;font-weight:600;color:var(--ink-soft);border-bottom:3px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--m2)}
+.banner{padding:10px 14px;border-radius:8px;background:var(--card);border:1.5px dashed var(--line);color:var(--ink-soft)}
+.banner strong{color:var(--ink)}
+
+.teambar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label,.lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+input[type=text],input[type=password],input[type=search],textarea{background:var(--card);border:1.5px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+textarea{resize:vertical;line-height:1.5}
+.progress{font-family:var(--f-mono);font-size:13px;color:var(--ink-soft)}
+.progress b{color:var(--ink)}
+.score-pill{font-family:var(--f-mono);font-weight:700;padding:4px 10px;border-radius:6px;background:var(--m2-bg);color:var(--m2)}
+
+.play{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:880px){.play{grid-template-columns:minmax(0,1fr)}}
+.pool{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 10px);max-height:calc(100vh - 40px);overflow:hidden}
+@media (max-width:880px){.pool{position:static;max-height:260px}}
+.pool-list{overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:2px;min-height:40px}
+.pool h3{margin:0;font-family:var(--f-hand);font-size:20px;line-height:1}
+.pgroup{display:flex;flex-direction:column;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.pool .hint{font-size:12px;color:var(--ink-soft);margin:0}
+
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:5px;background:var(--paper);border:1.5px solid var(--line);font-weight:500;font-size:13px;line-height:1.2;user-select:none;-webkit-user-select:none;touch-action:none;max-width:100%;overflow-wrap:anywhere}
+.chip[data-drag]{cursor:grab}
+.chip.used{opacity:.42;text-decoration:line-through;text-decoration-color:var(--ink-soft)}
+.chip.sel{background:var(--hl);border-color:var(--ink);opacity:1;text-decoration:none}
+.chip.in{background:transparent;border:0;padding:0;font-weight:600;font-size:13px;justify-content:center;text-align:center}
+.chip .x{border:0;background:none;padding:0 2px;font-size:15px;line-height:1;color:var(--ink-soft)}
+.chip .x:hover{color:var(--miss)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.btn{border:1.5px solid var(--line);background:var(--card);border-radius:6px;padding:7px 12px;font-weight:600;font-size:13px}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.warn{border-color:var(--miss);color:var(--miss)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.board-scroll{overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.board{position:relative;min-width:1400px;padding:4px 2px 10px;--colgap:10px}
+.board svg.links{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.ln{fill:none;stroke-width:2.2;stroke-linecap:round}
+.ln.m0{stroke:var(--m1)} .ln.m1{stroke:var(--m2)}
+.dot.m0{fill:var(--m1)} .dot.m1{fill:var(--m2)}
+.mgrs,.cols{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:var(--colgap);position:relative}
+.mgrs{margin-bottom:72px}
+.mgr{grid-column:2/span 2;background:var(--card);border:2px solid var(--m1);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);z-index:1}
+.mgr.m1{grid-column:7/span 2;border-color:var(--m2)}
+.mgr.active{outline:3px solid var(--hl);outline-offset:2px}
+.mgr-top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.mgr-label{font-family:var(--f-hand);font-weight:700;font-size:21px;line-height:1}
+.mgr.m0 .mgr-label{color:var(--m1)} .mgr.m1 .mgr-label{color:var(--m2)}
+.linkbtn{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1.5px solid currentColor;background:none;border-radius:99px;padding:3px 9px}
+.mgr.m0 .linkbtn{color:var(--m1)} .mgr.m1 .linkbtn{color:var(--m2)}
+.mgr.active .linkbtn{background:var(--hl)}
+.mgr-count{font-size:11px;color:var(--ink-soft);font-family:var(--f-mono)}
+.mgr .slot{min-height:42px}
+
+.col{display:flex;flex-direction:column;align-items:stretch;z-index:1}
+.shead{background:var(--card);border:2px solid var(--ink);border-radius:8px;padding:7px 8px;text-align:center;position:relative;font-family:var(--f-hand);font-weight:700;font-size:19px;line-height:1.1;box-shadow:var(--shadow)}
+.shead .mtag{position:absolute;top:-10px;right:-6px;font-family:var(--f-mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px;color:var(--paper)}
+.mtag.m0{background:var(--m1)} .mtag.m1{background:var(--m2)}
+.mtag.ok::after{content:" ✓"} .mtag.miss{text-decoration:line-through}
+.linking .shead,.linking .slot[data-slot$="-pl"]{cursor:copy}
+.linking .shead{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{background:var(--hl)}}
+@media (prefers-reduced-motion:reduce){.linking .shead{animation:none;background:var(--hl)}}
+.stem{display:block;width:0;height:14px;border-left:1.5px solid var(--line);margin:0 auto}
+.fork{display:block;position:relative;height:18px}
+.fork::before{content:"";position:absolute;left:50%;top:0;height:9px;border-left:1.5px solid var(--line)}
+.fork::after{content:"";position:absolute;left:calc(25% - 2px);right:calc(25% - 2px);top:9px;height:9px;border:1.5px solid var(--line);border-bottom:0}
+.techs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+
+.slot{background:var(--card);border:1.5px solid var(--line);border-radius:7px;padding:5px 6px 7px;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;text-align:center;transition:background .12s,border-color .12s}
+.slot-label{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);line-height:1.1}
+.slot .ph{font-size:11px;color:var(--line);font-style:italic;margin:auto 0}
+.slot.empty-ed{border-style:dashed}
+.slot.over,.slot.target{background:var(--hl);border-color:var(--ink);border-style:solid}
+.slot.srcsel{background:var(--hl)}
+.slot.filled .chip.in{margin:auto 0}
+.techs .slot{min-height:64px;padding-inline:3px}
+.techs .chip.in{font-size:12px}
+.slot.mk-ok{background:var(--ok-bg);border-color:var(--ok)}
+.slot.mk-near{background:var(--near-bg);border-color:var(--near)}
+.slot.mk-miss{background:var(--miss-bg);border-color:var(--miss)}
+
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-soft)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px;border:1.5px solid}
+.lg-ok{background:var(--ok-bg);border-color:var(--ok)!important}.lg-near{background:var(--near-bg);border-color:var(--near)!important}.lg-miss{background:var(--miss-bg);border-color:var(--miss)!important}
+
+.ghost{position:fixed;left:0;top:0;z-index:50;pointer-events:none;padding:5px 10px;border-radius:6px;background:var(--hl);border:1.5px solid var(--ink);font-weight:600;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.18);transform:translate(-50%,-120%) rotate(-2deg)}
+
+/* Classifica */
+.rank{display:flex;flex-direction:column;gap:8px;max-width:820px}
+.rrow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:10px 14px;text-align:left;width:100%}
+button.rrow:hover{border-color:var(--ink)}
+.rrow.me{border-color:var(--m2)}
+.rpos{font-family:var(--f-hand);font-weight:700;font-size:26px;line-height:1;color:var(--ink-soft)}
+.rrow:nth-child(1) .rpos{color:var(--m2)}
+.rname{font-weight:700;overflow-wrap:anywhere}
+.rsub{font-size:12px;color:var(--ink-soft)}
+.rpts{font-family:var(--f-mono);font-weight:700;font-size:20px;text-align:right}
+.rpts small{display:block;font-size:11px;font-weight:500;color:var(--ink-soft)}
+.rules{max-width:820px;font-size:13px;color:var(--ink-soft)}
+.rules table{border-collapse:collapse;margin-top:6px}
+.rules td{padding:3px 14px 3px 0}
+.rules td:last-child{font-family:var(--f-mono);color:var(--ink);text-align:right}
+h2.hand{font-family:var(--f-hand);font-size:28px;margin:6px 0 0;line-height:1}
+
+/* Admin */
+.gate{max-width:380px;background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.gate h2{margin:0;font-family:var(--f-hand);font-size:26px;line-height:1}
+.err{color:var(--miss);font-size:13px;min-height:1em;margin:0}
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card h3{margin:0;font-size:15px}
+.card .help{margin:0;font-size:12px;color:var(--ink-soft)}
+.streams-in{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.toggle{display:flex;align-items:flex-start;gap:10px}
+.toggle input{margin-top:3px;width:16px;height:16px;accent-color:var(--m2)}
+.toggle span small{display:block;color:var(--ink-soft);font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.count{font-family:var(--f-mono);font-size:11px;color:var(--ink-soft)}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;z-index:60;max-width:calc(100% - 32px);text-align:center}
+.saved{font-size:12px;color:var(--ink-soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Fanta<span>Stream</span></h1>
+      <p>Indovina come verrà divisa la Product Development: 2 manager, 9 stream, 36 posti.</p>
+    </div>
+    <span id="status" class="status open">Giocate aperte</span>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="mine" aria-selected="true">La mia squadra</button>
+    <button role="tab" data-tab="rank" aria-selected="false">Classifica</button>
+    <button role="tab" data-tab="admin" aria-selected="false">Admin</button>
+  </nav>
+
+  <!-- LA MIA SQUADRA -->
+  <section id="tab-mine">
+    <div class="teambar" style="margin-bottom:12px">
+      <div class="field"><label for="playerName">Il tuo nome</label>
+        <input id="playerName" type="text" maxlength="40" placeholder="Nome e cognome"></div>
+      <div class="field"><label for="teamName">Nome della squadra</label>
+        <input id="teamName" type="text" maxlength="40" placeholder="Es. I Validatori Folli"></div>
+      <span class="progress" id="mineProgress"></span>
+      <span id="mineScore"></span>
+      <span class="saved" id="mineSaved"></span>
+    </div>
+    <div class="play">
+      <aside class="pool" data-pool="mine">
+        <h3>I nomi</h3>
+        <input id="mine-search" type="search" placeholder="Cerca un nome…" aria-label="Cerca un nome">
+        <p class="hint">Trascina un nome su un posto, oppure toccalo e poi tocca il posto. Rilascialo qui per toglierlo.</p>
+        <div class="pool-list" id="mine-pool"></div>
+      </aside>
+      <div style="min-width:0">
+        <div class="toolbar">
+          <div class="legend" id="mineLegend"></div>
+          <button class="btn warn" id="resetMine" data-act="reset">Svuota schema</button>
+        </div>
+        <div class="board-scroll" id="mine-scroll"><div id="mine-board"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLASSIFICA -->
+  <section id="tab-rank" hidden>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div id="rank"></div>
+      <div id="viewWrap" hidden>
+        <div class="toolbar"><h2 class="hand" id="viewTitle"></h2><button class="btn" data-act="closeView">Chiudi</button></div>
+        <div class="legend" style="margin-bottom:8px"><span><i class="lg-ok"></i>Posto giusto</span><span><i class="lg-near"></i>Stream giusto, ruolo sbagliato</span><span><i class="lg-miss"></i>Sbagliato</span></div>
+        <div class="board-scroll" id="view-scroll"><div id="view-board"></div></div>
+      </div>
+      <div class="rules">
+        <strong style="color:var(--ink)">Punteggi</strong>
+        <table>
+          <tr><td>Manager indovinato</td><td>10</td></tr>
+          <tr><td>Project Leader o Technical Expert nello stream e ruolo giusti</td><td>10</td></tr>
+          <tr><td>Tecnico nello stream giusto</td><td>8</td></tr>
+          <tr><td>Persona nello stream giusto ma ruolo sbagliato</td><td>3</td></tr>
+          <tr><td>Stream collegato al manager giusto</td><td>5</td></tr>
+          <tr><td>Bonus stream perfetto (4 su 4)</td><td>10</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="tab-admin" hidden>
+    <div id="adminGate"></div>
+    <div id="adminPanel" hidden style="display:flex;flex-direction:column;gap:16px">
+      <div class="toolbar" style="margin:0"><h2 class="hand">Pannello admin</h2>
+        <div class="row"><span class="saved" id="cfgSaved"></span><button class="btn" data-act="logout">Esci</button></div></div>
+
+      <div class="card">
+        <h3>Partecipanti</h3>
+        <p class="help">Un nome per riga. I gruppi servono a ordinare la lista dei giocatori; con "Ruoli vincolati" un nome si può mettere solo nei posti del suo gruppo.</p>
+        <div class="admin-grid">
+          <div class="field"><label for="pp-manager">Manager <span class="count" id="c-manager"></span></label><textarea id="pp-manager" rows="4"></textarea></div>
+          <div class="field"><label for="pp-pl">Project Leader <span class="count" id="c-pl"></span></label><textarea id="pp-pl" rows="8"></textarea></div>
+          <div class="field"><label for="pp-te">Technical Expert <span class="count" id="c-te"></span></label><textarea id="pp-te" rows="8"></textarea></div>
+          <div class="field"><label for="pp-tech">Tecnici <span class="count" id="c-tech"></span></label><textarea id="pp-tech" rows="8"></textarea></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Nomi degli stream</h3>
+        <div class="streams-in" id="streamInputs"></div>
+      </div>
+
+      <div class="card">
+        <h3>Regole di gioco</h3>
+        <label class="toggle"><input type="checkbox" id="opt-strict"><span>Ruoli vincolati<small>Ogni nome va solo nei posti del suo gruppo.</small></span></label>
+        <label class="toggle"><input type="checkbox" id="opt-locked"><span>Chiudi le giocate<small>Nessuno può più modificare la propria squadra (bloccato anche lato server).</small></span></label>
+        <label class="toggle"><input type="checkbox" id="opt-revealed"><span>Svela la divisione ufficiale<small>Mostra punteggi, classifica e gli schemi di tutti. Prima di allora la divisione ufficiale e le squadre altrui non sono leggibili.</small></span></label>
+      </div>
+
+      <div class="card">
+        <h3>Divisione ufficiale</h3>
+        <p class="help">Compila lo schema reale quando viene annunciato: serve a calcolare i punti. Resta nascosto finché non attivi "Svela".</p>
+        <div class="play">
+          <aside class="pool" data-pool="result">
+            <input id="result-search" type="search" placeholder="Cerca un nome…" aria-label="Cerca un nome">
+            <div class="pool-list" id="result-pool"></div>
+          </aside>
+          <div class="board-scroll" id="result-scroll" style="min-width:0"><div id="result-board"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script type="module">
+/* =====================================================================
+   CONFIGURAZIONE — incolla qui la config del tuo progetto Firebase
+   (Impostazioni progetto → Le tue app → App web → firebaseConfig)
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyC_juFyMikSijkhdN9ajirBFR0Jkesifzk",
+  authDomain: "fantastream-e557f.firebaseapp.com",
+  projectId: "fantastream-e557f",
+  storageBucket: "fantastream-e557f.firebasestorage.app",
+  messagingSenderId: "893916317833",
+  appId: "1:893916317833:web:1ee3da5dd9833f77af1e58"
+};
+/* Email degli account admin (gli stessi messi in firestore.rules), in minuscolo */
+const ADMIN_EMAILS = ["massimo.petruzziello@gmail.com"];
+/* ===================================================================== */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, collection, onSnapshot, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const N = 9;
+const GROUPS = [["manager","Manager"],["pl","Project Leader"],["te","Technical Expert"],["tech","Tecnici"]];
+const SLOT_KEYS = ["m0","m1"].concat(...Array.from({length:N},(_,i)=>[`s${i}-pl`,`s${i}-te`,`s${i}-t0`,`s${i}-t1`]));
+
+function defaultCfg(){return {streams:Array.from({length:N},(_,i)=>`Stream ${i+1}`),people:{manager:[],pl:[],te:[],tech:[]},strictRoles:false,locked:false,revealed:false}}
+function normCfg(d){const c=defaultCfg();if(!d)return c;
+  c.people=Object.assign(defaultCfg().people,d.people||{});c.strictRoles=!!d.strictRoles;c.locked=!!d.locked;c.revealed=!!d.revealed;
+  c.streams=Array.from({length:N},(_,i)=>(d.streams&&d.streams[i])||`Stream ${i+1}`);return c}
+function normRes(d){return {slots:{...(d?.slots||{})},links:{...(d?.links||{})}}}
+function normTeam(d){return {teamName:d?.teamName||"",playerName:d?.playerName||"",slots:{...(d?.slots||{})},links:{...(d?.links||{})}}}
+
+let cfg=defaultCfg(), result=normRes(), myTeam=normTeam(), teams=[], entries=[];
+let fdb=null, auth=null, uid=null, authUser=null, isAdmin=false;
+let myLoaded=false, teamDirty=false, cfgDirty=false, resDirty=false, cfgLoaded=false;
+let unsubTeam=null, privSubs=null;
+let tab="mine", viewing=null, sel=null;
+const linkMode={mine:null,result:null};
+const filters={mine:"",result:""};
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3000)}
+function slotRole(k){if(k[0]==="m")return "manager";const r=k.split("-")[1];return r==="pl"?"pl":r==="te"?"te":"tech"}
+function rolesOf(name){const s=new Set();for(const [g] of GROUPS) if(cfg.people[g].includes(name)) s.add(g);return s}
+function roleOk(name,slot){if(!cfg.strictRoles)return true;const r=rolesOf(name);return r.size===0||r.has(slotRole(slot))}
+
+function stateOf(ctx){return ctx==="mine"?myTeam:ctx==="result"?result:viewing?.team}
+function editable(ctx){if(ctx==="mine")return !cfg.locked&&!!uid;if(ctx==="result")return isAdmin;return false}
+function changed(ctx){if(ctx==="mine")saveTeam();else if(ctx==="result")saveRes();renderCtx(ctx);if(ctx==="mine")renderMineMeta()}
+
+/* ---------- punteggi ---------- */
+function score(t,res){
+  const out={pts:0,marks:{},linkOk:{},exact:0};
+  if(!res||!Object.keys(res.slots).length)return null;
+  const loc={};for(const k in res.slots){const n=res.slots[k];if(k[0]==="m")loc[n]={s:-1,r:"manager"};else loc[n]={s:+k.slice(1).split("-")[0],r:slotRole(k)}}
+  const realM=[res.slots.m0,res.slots.m1];
+  for(const m of [0,1]){const n=t.slots["m"+m];if(!n)continue;if(realM.includes(n)){out.pts+=10;out.marks["m"+m]="ok";out.exact++}else out.marks["m"+m]="miss"}
+  for(let i=0;i<N;i++){let perfect=0;
+    for(const k of [`s${i}-pl`,`s${i}-te`,`s${i}-t0`,`s${i}-t1`]){const n=t.slots[k];if(!n)continue;const r=slotRole(k),l=loc[n];
+      if(l&&l.s===i&&l.r===r){out.pts+=r==="tech"?8:10;out.marks[k]="ok";perfect++;out.exact++}
+      else if(l&&l.s===i){out.pts+=3;out.marks[k]="near"}else out.marks[k]="miss"}
+    if(perfect===4)out.pts+=10;
+    const tm=t.links[i],rm=res.links[i];
+    if(tm!=null){const ok=rm!=null&&t.slots["m"+tm]&&t.slots["m"+tm]===res.slots["m"+rm];out.linkOk[i]=!!ok;if(ok)out.pts+=5}}
+  return out;
+}
+const filledCount=st=>SLOT_KEYS.filter(k=>st.slots[k]).length;
+
+/* ---------- schema ---------- */
+function chipIn(ctx,key,n,ed){return `<span class="chip in" ${ed?"data-drag":""} data-ctx="${ctx}" data-name="${esc(n)}" data-from="${key}">${esc(n)}${ed?`<button class="x" data-act="clear" data-ctx="${ctx}" data-slot="${key}" aria-label="Togli ${esc(n)}">×</button>`:""}</span>`}
+function slotHTML(ctx,st,ed,key,label,sc){
+  const n=st.slots[key],mk=sc?.marks[key];
+  const cls=["slot",n?"filled":(ed?"empty-ed":""),mk?"mk-"+mk:"",(sel&&sel.ctx===ctx&&sel.from===key)?"srcsel":"",(sel&&sel.ctx===ctx&&!n&&roleOk(sel.name,key))?"target":""].join(" ");
+  return `<div class="${cls}" data-slot="${key}" data-ctx="${ctx}"><span class="slot-label">${label}</span>${n?chipIn(ctx,key,n,ed):`<span class="ph">${ed?"trascina qui":"—"}</span>`}</div>`;
+}
+function boardHTML(ctx,st,ed,sc){
+  const lm=linkMode[ctx];
+  let h=`<div class="board ${lm!=null?"linking":""}" data-board="${ctx}"><svg class="links" aria-hidden="true"></svg><div class="mgrs">`;
+  for(const m of [0,1]){
+    const cnt=Object.values(st.links).filter(v=>v===m).length;
+    h+=`<div class="mgr m${m} ${lm===m?"active":""}"><div class="mgr-top"><span class="mgr-label">Manager ${m+1}</span>${ed?`<button class="linkbtn" data-act="link" data-ctx="${ctx}" data-m="${m}">${lm===m?"Fatto":"Collega"}</button>`:""}</div>${slotHTML(ctx,st,ed,"m"+m,"Nome",sc)}<span class="mgr-count">${cnt} stream collegati</span></div>`;
+  }
+  h+=`</div><div class="cols">`;
+  for(let i=0;i<N;i++){
+    const l=st.links[i];const lk=sc&&l!=null?(sc.linkOk[i]?" ok":" miss"):"";
+    h+=`<div class="col"><div class="shead" data-shead="${i}" data-ctx="${ctx}">${esc(cfg.streams[i])}${l!=null?`<span class="mtag m${l}${lk}">M${l+1}</span>`:""}</div><i class="stem"></i>
+      ${slotHTML(ctx,st,ed,`s${i}-pl`,"Project Leader",sc)}<i class="stem"></i>
+      ${slotHTML(ctx,st,ed,`s${i}-te`,"Technical Expert",sc)}<i class="fork"></i>
+      <div class="techs">${slotHTML(ctx,st,ed,`s${i}-t0`,"Tech",sc)}${slotHTML(ctx,st,ed,`s${i}-t1`,"Tech",sc)}</div></div>`;
+  }
+  return h+`</div></div>`;
+}
+function drawLines(ctx){
+  const board=document.querySelector(`[data-board="${ctx}"]`);if(!board)return;
+  const st=stateOf(ctx);if(!st)return;
+  const svg=board.querySelector("svg.links"),br=board.getBoundingClientRect();
+  if(!br.width)return;
+  svg.setAttribute("viewBox",`0 0 ${br.width} ${br.height}`);svg.setAttribute("width",br.width);svg.setAttribute("height",br.height);
+  let p="";
+  for(let i=0;i<N;i++){const m=st.links[i];if(m==null)continue;
+    const mr=board.querySelector(`.mgr.m${m}`).getBoundingClientRect(),sr=board.querySelector(`[data-shead="${i}"]`).getBoundingClientRect();
+    const x1=mr.left+mr.width/2-br.left,y1=mr.bottom-br.top,x2=sr.left+sr.width/2-br.left,y2=sr.top-br.top,my=(y1+y2)/2;
+    p+=`<path class="ln m${m}" fill="none" d="M${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}"/><circle class="dot m${m}" cx="${x2}" cy="${y2}" r="3.5"/>`}
+  svg.innerHTML=p;
+}
+function poolHTML(ctx,st){
+  const used=new Set(Object.values(st.slots)),f=filters[ctx].trim().toLowerCase();
+  let h="",any=false,total=0;
+  for(const [g,label] of GROUPS){
+    const names=cfg.people[g];total+=names.length;
+    const vis=names.filter(n=>!f||n.toLowerCase().includes(f));if(!vis.length)continue;any=true;
+    h+=`<div class="pgroup"><span class="lbl">${label} · ${names.filter(n=>!used.has(n)).length}/${names.length}</span><div class="chips">`+
+      vis.map(n=>`<span class="chip ${used.has(n)?"used":""} ${sel&&sel.ctx===ctx&&sel.name===n?"sel":""}" data-drag data-ctx="${ctx}" data-name="${esc(n)}" data-from="">${esc(n)}</span>`).join("")+`</div></div>`;
+  }
+  if(!total)return `<p class="hint"><strong>Nessun nome ancora.</strong> L'amministratore li inserisce dalla scheda Admin; appena salvati compaiono qui.</p>`;
+  if(!any)return `<p class="hint">Nessun nome corrisponde a "${esc(f)}".</p>`;
+  return h;
+}
+function renderCtx(ctx){
+  const st=stateOf(ctx);if(!st)return;
+  const sc=ctx==="result"?null:(cfg.revealed?score(st,result):null);
+  const host=document.getElementById(ctx+"-board");if(!host)return;
+  host.innerHTML=boardHTML(ctx,st,editable(ctx),sc);
+  const pool=document.getElementById(ctx+"-pool");if(pool)pool.innerHTML=poolHTML(ctx,st);
+  requestAnimationFrame(()=>drawLines(ctx));
+}
+function renderMineMeta(){
+  const n=filledCount(myTeam);
+  $("#mineProgress").innerHTML=`<b>${n}</b>/38 posti · <b>${Object.keys(myTeam.links).length}</b>/9 collegamenti`;
+  const sc=cfg.revealed?score(myTeam,result):null;
+  $("#mineScore").innerHTML=sc?`<span class="score-pill">${sc.pts} punti</span>`:"";
+  $("#mineLegend").innerHTML=sc?`<span><i class="lg-ok"></i>Posto giusto</span><span><i class="lg-near"></i>Stream giusto, ruolo sbagliato</span><span><i class="lg-miss"></i>Sbagliato</span>`
+    :(cfg.locked?`<span>Le giocate sono chiuse: lo schema è in sola lettura.</span>`:`<span>Usa "Collega" su un manager e poi tocca gli stream che gestisce.</span>`);
+  $("#resetMine").hidden=cfg.locked;
+  for(const id of ["teamName","playerName"]){const el=document.getElementById(id);if(document.activeElement!==el)el.value=myTeam[id];el.disabled=cfg.locked}
+}
+function renderStatus(){
+  const s=$("#status");
+  if(cfg.revealed){s.className="status rev";s.textContent="Risultati svelati"}
+  else if(cfg.locked){s.className="status locked";s.textContent="Giocate chiuse"}
+  else{s.className="status open";s.textContent="Giocate aperte"}
+}
+
+/* ---------- classifica ---------- */
+function renderRank(){
+  const host=$("#rank");
+  if(cfg.revealed){
+    const list=teams.map(t=>({id:t.id,team:normTeam(t)})).filter(e=>e.team.teamName||filledCount(e.team)>0);
+    list.forEach(e=>e.sc=score(e.team,result)||{pts:0,exact:0});
+    list.sort((a,b)=>b.sc.pts-a.sc.pts||b.sc.exact-a.sc.exact);
+    const rows=list.map((e,i)=>`<button class="rrow ${e.id===uid?"me":""}" data-act="view" data-id="${esc(e.id)}"><span class="rpos">${i+1}</span><span><span class="rname">${esc(e.team.teamName||"Squadra senza nome")}</span><span class="rsub">${esc(e.team.playerName||"")}</span></span><span class="rpts">${e.sc.pts}<small>${e.sc.exact} posti esatti</small></span></button>`).join("");
+    host.innerHTML=`<h2 class="hand">Classifica</h2><p class="rsub" style="margin:4px 0 10px">Tocca una squadra per vedere il suo schema.</p><div class="rank">${rows||`<p class="banner">Nessuna squadra in gara.</p>`}</div>`;
+  }else{
+    const list=entries.filter(e=>e.teamName||e.filled>0).sort((a,b)=>(b.filled||0)-(a.filled||0));
+    const rows=list.map(e=>`<div class="rrow ${e.id===uid?"me":""}"><span class="rpos">·</span><span><span class="rname">${esc(e.teamName||"Squadra senza nome")}</span><span class="rsub">${esc(e.playerName||"")}</span></span><span class="rpts">${e.filled||0}<small>posti su 38</small></span></div>`).join("");
+    host.innerHTML=`<h2 class="hand">Squadre iscritte · ${list.length}</h2><p class="rsub" style="margin:4px 0 10px">La classifica e gli schemi degli altri si vedono quando l'admin svela la divisione ufficiale.</p><div class="rank">${rows||`<p class="banner">Ancora nessuna squadra. Crea la tua nella scheda "La mia squadra".</p>`}</div>`;
+  }
+}
+function renderView(){
+  const w=$("#viewWrap");
+  if(!viewing||!cfg.revealed){w.hidden=true;viewing=null;return}
+  const t=teams.find(x=>x.id===viewing.id);if(t)viewing.team=normTeam(t);
+  w.hidden=false;$("#viewTitle").textContent=viewing.team.teamName||"Squadra senza nome";
+  renderCtx("view");
+}
+
+/* ---------- admin ---------- */
+function renderAdmin(){
+  const gate=$("#adminGate"),panel=$("#adminPanel");
+  if(isAdmin){gate.hidden=true;panel.hidden=false;syncAdminFields();renderCtx("result");return}
+  gate.hidden=false;panel.hidden=true;
+  if(!fdb){gate.innerHTML=`<p class="banner">Configura prima Firebase (vedi LEGGIMI.md).</p>`;return}
+  if(authUser&&!authUser.isAnonymous){
+    gate.innerHTML=`<div class="gate"><h2>Account non admin</h2><p class="rsub" style="margin:0">L'account ${esc(authUser.email||"")} non è tra gli amministratori.</p><button class="btn" data-act="logout">Esci</button></div>`;return}
+  gate.innerHTML=`<form class="gate" id="loginForm"><h2>Area admin</h2>
+    <div class="field"><label for="adm-email">Email</label><input id="adm-email" type="email" autocomplete="username" required style="background:var(--card);border:1.5px solid var(--line);border-radius:6px;padding:8px 10px"></div>
+    <div class="field"><label for="adm-pw">Password</label><input id="adm-pw" type="password" autocomplete="current-password" required></div>
+    <p class="err" id="gateErr"></p><button class="btn primary" type="submit">Entra</button>
+    <p class="rsub" style="margin:0">Attenzione: entrando come admin da questo browser, la squadra anonima giocata qui non sarà più modificabile. Se giochi anche tu, fallo dall'account admin.</p></form>`;
+}
+let streamInputsBuilt=false;
+function syncAdminFields(){
+  const focus=document.activeElement;
+  for(const [g] of GROUPS){const ta=$("#pp-"+g);if(focus!==ta)ta.value=cfg.people[g].join("\n");$("#c-"+g).textContent=`(${cfg.people[g].length})`}
+  const si=$("#streamInputs");
+  if(!streamInputsBuilt){si.innerHTML=cfg.streams.map((s,i)=>`<input type="text" id="sn-${i}" data-sn="${i}" maxlength="24" aria-label="Nome stream ${i+1}">`).join("");streamInputsBuilt=true}
+  cfg.streams.forEach((s,i)=>{const el=$("#sn-"+i);if(focus!==el)el.value=s});
+  $("#opt-strict").checked=cfg.strictRoles;$("#opt-locked").checked=cfg.locked;$("#opt-revealed").checked=cfg.revealed;
+}
+
+/* ---------- salvataggi ---------- */
+function makeSaver(getWriter,setDirty,label){
+  let timer=null,busy=false,again=false;
+  async function flush(){
+    if(busy){again=true;return}
+    const w=getWriter();if(!w){setDirty(false);return}
+    busy=true;$(label).textContent="Salvataggio…";
+    try{await w();$(label).textContent="Salvato"}
+    catch(e){$(label).textContent="Non salvato";
+      toast(e&&e.code==="permission-denied"?(cfg.locked?"Le giocate sono chiuse.":"Permesso negato dal server."):"Salvataggio non riuscito: controlla la connessione.")}
+    busy=false;
+    if(again){again=false;flush()}else setDirty(false);
+  }
+  return ()=>{setDirty(true);clearTimeout(timer);timer=setTimeout(flush,600)};
+}
+const saveTeam=makeSaver(()=>fdb&&uid?async()=>{
+  const now=Date.now(),b=writeBatch(fdb);
+  b.set(doc(fdb,"teams",uid),{teamName:myTeam.teamName,playerName:myTeam.playerName,slots:myTeam.slots,links:myTeam.links,updatedAt:now});
+  b.set(doc(fdb,"entries",uid),{teamName:myTeam.teamName,playerName:myTeam.playerName,filled:filledCount(myTeam),updatedAt:now});
+  await b.commit();
+}:null,v=>teamDirty=v,"#mineSaved");
+const saveCfg=makeSaver(()=>fdb&&isAdmin?()=>setDoc(doc(fdb,"config","game"),JSON.parse(JSON.stringify(cfg))):null,v=>cfgDirty=v,"#cfgSaved");
+const saveRes=makeSaver(()=>fdb&&isAdmin?()=>setDoc(doc(fdb,"result","official"),JSON.parse(JSON.stringify(result))):null,v=>resDirty=v,"#cfgSaved");
+
+/* ---------- posizionamento ---------- */
+function place(ctx,name,from,to){
+  const st=stateOf(ctx);if(!st||!editable(ctx))return;
+  if(to){
+    if(!roleOk(name,to)){toast(`${name} non può andare in questo ruolo (ruoli vincolati).`);return}
+    const prev=st.slots[to];
+    for(const k in st.slots)if(st.slots[k]===name)delete st.slots[k];
+    if(prev&&prev!==name&&from&&roleOk(prev,from))st.slots[from]=prev;
+    st.slots[to]=name;
+  }else{for(const k in st.slots)if(st.slots[k]===name)delete st.slots[k]}
+  sel=null;changed(ctx);
+}
+function toggleLink(ctx,i){
+  const st=stateOf(ctx),m=linkMode[ctx];if(m==null||!editable(ctx))return;
+  if(st.links[i]===m)delete st.links[i];else st.links[i]=m;changed(ctx);
+}
+
+/* ---------- trascinamento + tocco ---------- */
+let drag=null;
+document.addEventListener("pointerdown",e=>{
+  if(e.button>0||e.target.closest("[data-act]"))return;
+  const chip=e.target.closest("[data-drag]");if(!chip)return;
+  const ctx=chip.dataset.ctx;if(!editable(ctx))return;
+  if(linkMode[ctx]!=null&&chip.dataset.from)return;
+  drag={chip,ctx,name:chip.dataset.name,from:chip.dataset.from||null,x:e.clientX,y:e.clientY,started:false,id:e.pointerId,ghost:null,over:null};
+});
+document.addEventListener("pointermove",e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  if(!drag.started){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;
+    drag.started=true;const g=document.createElement("div");g.className="ghost";g.textContent=drag.name;document.body.appendChild(g);drag.ghost=g;}
+  e.preventDefault();
+  drag.ghost.style.left=e.clientX+"px";drag.ghost.style.top=e.clientY+"px";
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  const slot=el&&el.closest(`[data-slot][data-ctx="${drag.ctx}"]`);
+  if(drag.over&&drag.over!==slot)drag.over.classList.remove("over");
+  if(slot&&roleOk(drag.name,slot.dataset.slot)){slot.classList.add("over");drag.over=slot}else drag.over=null;
+  const sc=document.getElementById(drag.ctx+"-scroll");
+  if(sc){const r=sc.getBoundingClientRect();if(e.clientY>r.top&&e.clientY<r.bottom){if(e.clientX>r.right-50)sc.scrollLeft+=14;else if(e.clientX<r.left+50&&e.clientX>r.left-10)sc.scrollLeft-=14}}
+},{passive:false});
+function endDrag(e,cancel){
+  if(!drag||e.pointerId!==drag.id)return;
+  const d=drag;drag=null;
+  if(d.ghost)d.ghost.remove();if(d.over)d.over.classList.remove("over");
+  if(cancel)return;
+  if(d.started){
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    const slot=el&&el.closest(`[data-slot][data-ctx="${d.ctx}"]`);
+    if(slot)place(d.ctx,d.name,d.from,slot.dataset.slot);
+    else if(el&&el.closest(`[data-pool="${d.ctx}"]`)&&d.from)place(d.ctx,d.name,d.from,null);
+    return;
+  }
+  if(d.from&&sel&&sel.ctx===d.ctx&&sel.name!==d.name){place(d.ctx,sel.name,sel.from,d.from);return}
+  sel=(sel&&sel.ctx===d.ctx&&sel.name===d.name&&sel.from===d.from)?null:{ctx:d.ctx,name:d.name,from:d.from};
+  renderCtx(d.ctx);
+}
+document.addEventListener("pointerup",e=>endDrag(e,false));
+document.addEventListener("pointercancel",e=>endDrag(e,true));
+
+document.addEventListener("click",async e=>{
+  const act=e.target.closest("[data-act]");
+  if(act){const a=act.dataset.act,ctx=act.dataset.ctx;
+    if(a==="clear"){const st=stateOf(ctx);const n=st.slots[act.dataset.slot];if(n)place(ctx,n,act.dataset.slot,null);return}
+    if(a==="link"){const m=+act.dataset.m;linkMode[ctx]=linkMode[ctx]===m?null:m;sel=null;renderCtx(ctx);return}
+    if(a==="reset"){if(act.dataset.confirm){myTeam.slots={};myTeam.links={};delete act.dataset.confirm;act.textContent="Svuota schema";changed("mine")}else{act.dataset.confirm="1";act.textContent="Confermi? Tocca di nuovo";setTimeout(()=>{if(act.dataset.confirm){delete act.dataset.confirm;act.textContent="Svuota schema"}},3500)}return}
+    if(a==="view"){const t=teams.find(x=>x.id===act.dataset.id);if(t){viewing={id:t.id,team:normTeam(t)};renderView();$("#viewWrap").scrollIntoView({behavior:"smooth",block:"start"})}return}
+    if(a==="closeView"){viewing=null;renderView();return}
+    if(a==="logout"){if(auth)await signOut(auth);return}
+    return}
+  const tabBtn=e.target.closest("[data-tab]");
+  if(tabBtn){tab=tabBtn.dataset.tab;document.querySelectorAll("[data-tab]").forEach(b=>b.setAttribute("aria-selected",b===tabBtn));
+    for(const t of ["mine","rank","admin"])$("#tab-"+t).hidden=t!==tab;
+    if(tab==="mine")renderCtx("mine");if(tab==="rank"){renderRank();renderView()}if(tab==="admin")renderAdmin();return}
+  const sh=e.target.closest("[data-shead]");
+  if(sh&&linkMode[sh.dataset.ctx]!=null){toggleLink(sh.dataset.ctx,+sh.dataset.shead);return}
+  const slot=e.target.closest("[data-slot]");
+  if(slot&&linkMode[slot.dataset.ctx]!=null&&slot.dataset.slot.endsWith("-pl")){toggleLink(slot.dataset.ctx,+slot.dataset.slot.slice(1).split("-")[0]);return}
+  if(e.target.closest("[data-drag]"))return;
+  if(slot){const ctx=slot.dataset.ctx,key=slot.dataset.slot;if(sel&&sel.ctx===ctx){place(ctx,sel.name,sel.from,key);return}}
+  const pool=e.target.closest("[data-pool]");
+  if(pool&&sel&&sel.ctx===pool.dataset.pool&&sel.from&&!e.target.closest("input")){place(sel.ctx,sel.name,sel.from,null);return}
+});
+
+document.addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(e.target.id==="loginForm"){
+    const err=$("#gateErr");err.textContent="";
+    try{await signInWithEmailAndPassword(auth,$("#adm-email").value.trim(),$("#adm-pw").value)}
+    catch(x){err.textContent=x.code==="auth/invalid-credential"||x.code==="auth/wrong-password"||x.code==="auth/user-not-found"?"Email o password errate.":"Accesso non riuscito ("+(x.code||"errore")+")."}
+  }
+});
+document.addEventListener("input",e=>{
+  const id=e.target.id;
+  if(id==="teamName"||id==="playerName"){myTeam[id]=e.target.value;saveTeam();return}
+  if(id==="mine-search"||id==="result-search"){const ctx=id.split("-")[0];filters[ctx]=e.target.value;document.getElementById(ctx+"-pool").innerHTML=poolHTML(ctx,stateOf(ctx));return}
+  if(id.startsWith("pp-")){const g=id.slice(3);const seen=new Set();cfg.people[g]=e.target.value.split("\n").map(s=>s.trim()).filter(s=>s&&!seen.has(s)&&seen.add(s));$("#c-"+g).textContent=`(${cfg.people[g].length})`;saveCfg();renderCtx("result");return}
+  if(e.target.dataset.sn!=null){cfg.streams[+e.target.dataset.sn]=e.target.value.trim()||`Stream ${+e.target.dataset.sn+1}`;saveCfg();renderCtx("result");return}
+});
+document.addEventListener("change",e=>{
+  const map={"opt-strict":"strictRoles","opt-locked":"locked","opt-revealed":"revealed"};
+  if(map[e.target.id]){cfg[map[e.target.id]]=e.target.checked;saveCfg();renderStatus();renderMineMeta()}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){sel=null;linkMode.mine=linkMode.result=null;renderCtx("mine");if(isAdmin)renderCtx("result")}});
+let rz;window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>["mine","result","view"].forEach(drawLines),80)});
+
+function renderAll(){renderStatus();renderMineMeta();renderCtx("mine");if(tab==="rank"){renderRank();renderView()}if(tab==="admin")renderAdmin()}
+
+/* ---------- Firebase ---------- */
+function stopPriv(){if(privSubs){privSubs.forEach(f=>f());privSubs=null}result=normRes();teams=[]}
+function syncPriv(){
+  const want=!!uid&&(cfg.revealed||isAdmin);
+  if(want&&!privSubs){
+    const onErr=()=>{stopPriv()};
+    privSubs=[
+      onSnapshot(doc(fdb,"result","official"),s=>{if(resDirty)return;result=normRes(s.exists()?s.data():null);renderAll()},onErr),
+      onSnapshot(collection(fdb,"teams"),s=>{teams=s.docs.map(d=>({id:d.id,...d.data()}));if(tab==="rank"){renderRank();renderView()}},onErr)
+    ];
+  }else if(!want&&privSubs){stopPriv();renderAll()}
+}
+function boot(){
+  renderAll();
+  if(firebaseConfig.apiKey.startsWith("INCOLLA")){
+    const b=$("#banner");b.hidden=false;b.innerHTML="<strong>Firebase non ancora configurato.</strong> Incolla la firebaseConfig in cima a index.html (istruzioni in LEGGIMI.md). Intanto puoi provare lo schema, ma nulla viene salvato.";
+    uid="locale";renderAll();return;
+  }
+  const app=initializeApp(firebaseConfig);auth=getAuth(app);fdb=getFirestore(app);
+  onSnapshot(doc(fdb,"config","game"),s=>{cfgLoaded=true;if(cfgDirty)return;cfg=normCfg(s.exists()?s.data():null);syncPriv();renderAll()},
+    ()=>toast("Impossibile leggere la configurazione: controlla le regole Firestore."));
+  onSnapshot(collection(fdb,"entries"),s=>{entries=s.docs.map(d=>({id:d.id,...d.data()}));if(tab==="rank")renderRank()},()=>{});
+  onAuthStateChanged(auth,u=>{
+    authUser=u;
+    if(!u){uid=null;isAdmin=false;stopPriv();renderAll();
+      signInAnonymously(auth).catch(x=>{const b=$("#banner");b.hidden=false;b.innerHTML="<strong>Accesso non riuscito.</strong> Verifica che l'accesso Anonimo sia abilitato in Firebase Authentication ("+esc(x.code||"")+")."});return}
+    uid=u.uid;isAdmin=!u.isAnonymous&&ADMIN_EMAILS.map(x=>x.toLowerCase()).includes((u.email||"").toLowerCase());
+    stopPriv();syncPriv();
+    if(unsubTeam)unsubTeam();myLoaded=false;myTeam=normTeam();
+    unsubTeam=onSnapshot(doc(fdb,"teams",uid),s=>{
+      if(myLoaded)return;myLoaded=true;
+      if(s.exists()&&!teamDirty)myTeam=normTeam(s.data());
+      renderMineMeta();renderCtx("mine");
+    },()=>{});
+    renderAll();
+  });
+}
+boot();
+</script>
+</body>
+</html>
